@@ -1,0 +1,12 @@
+bin/
+obj/
+
+tmp/
+temp/
+*.tmp
+
+log/
+logs/
+*.log
+
+*.user

@@ -23,4 +23,4 @@ case "$uname_rezult" in
         ;;
 esac
 
-echo "\"$OS\""
+echo "$OS"

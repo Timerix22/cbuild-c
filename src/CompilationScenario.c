@@ -125,5 +125,5 @@ Maybe CompilationScenario_exec(CompilationScenario* sc){
             return false;
         }
     );*/
-    return true;
+    return MaybeNull;
 }

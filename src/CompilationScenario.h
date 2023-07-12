@@ -1,4 +1,4 @@
-#include "../kerep-headers/DtsodParser/DtsodV24.h"
+#include "../kerep/src/DtsodParser/DtsodV24.h"
 
 extern const char* os;
 extern const char* arch;

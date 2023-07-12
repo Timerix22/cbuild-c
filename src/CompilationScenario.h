@@ -1,16 +1,15 @@
-#include "../../GraphC/dependencies/kerep/src/DtsodParser/DtsodV24.h"
+#include "../kerep-headers/DtsodParser/DtsodV24.h"
 
 extern const char* os;
 extern const char* arch;
 
 typedef struct {
+    const char* language;
     const char* compiler;
     const char* obj_dir;
-    const char* out_dir;
-    Autoarr(Pointer)* args_pre;
+    const char* out_file;
+    Autoarr(Pointer)* args;
     Autoarr(Pointer)* sources;
-    Autoarr(Pointer)* args_post;
-    Autoarr(Pointer)* defines;
 } CompilationScenario;
 
 /*         Public Functions         */
@@ -22,6 +21,10 @@ void CompilationScenario_destruct(CompilationScenario* ptr);
 /// applies all options from project, selected configuration and task
 ///@return Maybe<void>
 Maybe CompilationScenario_applyProjectOptions(CompilationScenario* sc, Hashtable* dtsod, const char* configuration, const char* task);
+
+/// compiles project using given scenario
+/// @return Maybe<void>
+Maybe CompilationScenario_exec(CompilationScenario* sc);
 
 
 /*        Internal Functions        */

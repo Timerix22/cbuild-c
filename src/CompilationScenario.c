@@ -1,20 +1,17 @@
 #include "CompilationScenario.h"
+#include "unistd.h"
 
 void CompilationScenario_construct(CompilationScenario* ptr){
     ptr->compiler = "UNDEFINED_COMPILER";
     ptr->obj_dir = "obj";
-    ptr->out_dir = "bin";
-    ptr->args_pre = Autoarr_create(Pointer, 32, 32);
+    ptr->out_file = "bin/out";
+    ptr->args = Autoarr_create(Pointer, 32, 32);
     ptr->sources = Autoarr_create(Pointer, 32, 32);
-    ptr->args_post = Autoarr_create(Pointer, 32, 32);
-    ptr->defines = Autoarr_create(Pointer, 32, 32);
 }
 
 void CompilationScenario_destruct(CompilationScenario* ptr){
-    Autoarr_freeWithoutMembers(ptr->args_pre, true);
+    Autoarr_freeWithoutMembers(ptr->args, true);
     Autoarr_freeWithoutMembers(ptr->sources, true);
-    Autoarr_freeWithoutMembers(ptr->args_post, true);
-    Autoarr_freeWithoutMembers(ptr->defines, true);
 }
 
 #define Dtsod_setStrField(FIELD) \
@@ -40,11 +37,9 @@ Maybe CompilationScenario_tryApplyOptions(CompilationScenario* sc, Hashtable* dt
     Unitype val = UniNull;
     Dtsod_setStrField(compiler);
     Dtsod_setStrField(obj_dir);
-    Dtsod_setStrField(out_dir);
-    Dtsod_addArrField(args_pre, char);
+    Dtsod_setStrField(out_file);
+    Dtsod_addArrField(args, char);
     Dtsod_addArrField(sources, char);
-    Dtsod_addArrField(args_post, char);
-    Dtsod_addArrField(defines, char);
 
     try(CompilationScenario_tryApplyPlatformSpecificOptions(sc, dtsod), _m0, ;);
 
@@ -100,4 +95,35 @@ Maybe CompilationScenario_applyProjectOptions(CompilationScenario* sc, Hashtable
     // task options
     try(CompilationScenario_applyTaskOptions(sc, dtsod, task), _m2, ;);
     return MaybeNull;
+}
+
+
+/*
+universal compilation:
+    pre-compilation tools
+    parallel foreach src
+        apply proj settings
+        apply lang settings
+        apply dir settings
+        if platform, settings or src were changed
+            compile object to onj/lang
+        concurrent add obj to obj_ar
+    post-compilation tools
+        example: if linkage enabled
+            apply proj linker settings
+            link
+            post-link tools
+    move files to general_out_dir
+*/
+
+Maybe CompilationScenario_exec(CompilationScenario* sc){
+    /*const char ** compiler_args;
+    Autoarr_foreach(sc->sources, arg,
+        int rzlt = -1;
+        if(rzlt != 0){
+            kprintf("\nprocess exited with code %i\n", rzlt);
+            return false;
+        }
+    );*/
+    return true;
 }

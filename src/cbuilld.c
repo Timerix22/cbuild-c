@@ -1,6 +1,6 @@
-#include "../../GraphC/dependencies/kerep/src/base/base.h"
-#include "../../GraphC/dependencies/kerep/src/Filesystem/filesystem.h"
-#include "../../GraphC/dependencies/kerep/src/DtsodParser/DtsodV24.h"
+#include "../kerep-headers/base/base.h"
+#include "../kerep-headers/Filesystem/filesystem.h"
+#include "../kerep-headers/DtsodParser/DtsodV24.h"
 #include "CompilationScenario.h"
 
 #ifndef OS
@@ -93,8 +93,10 @@ int main(const int argc, const char** argv){
         Hashtable* proj_dtsod = _m3.value.VoidPtr;
         CompilationScenario proj_sc;
         CompilationScenario_construct(&proj_sc);
-
         tryLast(CompilationScenario_applyProjectOptions(&proj_sc, proj_dtsod, configuration, task), _m4, free(proj_file_text))
+        
+        if(!CompilationScenario_exec(&proj_sc))
+            throw("compilation error");
 
         CompilationScenario_destruct(&proj_sc);
         Hashtable_free(proj_dtsod);

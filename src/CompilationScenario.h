@@ -3,14 +3,28 @@
 extern const char* os;
 extern const char* arch;
 
-typedef struct {
-    const char* language;
-    const char* compiler;
-    const char* obj_dir;
-    const char* out_file;
-    Autoarr(Pointer)* args;
-    Autoarr(Pointer)* sources;
-} CompilationScenario;
+STRUCT(Language,
+    Autoarr(Pointer)* aliases;
+    Autoarr(Pointer)* file_extensions;
+)
+Autoarr_declare(Language)
+
+STRUCT(Tool,
+    Autoarr(Pointer)* aliases;
+    const char* exe_file;
+    bool parallel;
+    Hashtable* supported_languages;
+    Hashtable* src_languages;
+    Autoarr(Pointer)* src_dirs;
+    Autoarr(Pointer)* pre_args;
+    Autoarr(Pointer)* post_args;
+)
+
+STRUCT(CompilationScenario,
+    Hashtable* tools; /* Hashtable<Tool> */
+    Hashtable* languages; /* Hashtable<Languages> */
+    Autoarr(Pointer)* tool_order;
+)
 
 /*         Public Functions         */
 
@@ -29,13 +43,15 @@ Maybe CompilationScenario_exec(CompilationScenario* sc);
 
 /*        Internal Functions        */
 
+/// tries to set options for tools registered in the project
 ///@return Maybe<bool>
-Maybe CompilationScenario_tryApplyOptions(CompilationScenario* sc, Hashtable* dtsod);
+Maybe CompilationScenario_tryApplyToolsOptions(CompilationScenario* sc, Hashtable* dtsod);
 
+/// tries to get any options from field <condition_name>
 ///@return Maybe<bool>
 Maybe CompilationScenario_tryApplyConditionalOptions(CompilationScenario* sc, Hashtable* dtsod, const char* condition_name);
 
-/// tries to get options from dtsod fields named "windows", "linux", "android", "x64", "android-arm32", "windows_x86", etc.
+/// tries to get options from dtsod fields named "windowss", "linux", "android", "x64", "android-arm32", "windows_x86", etc.
 ///@return Maybe<bool>
 Maybe CompilationScenario_tryApplyPlatformSpecificOptions(CompilationScenario* sc, Hashtable* dtsod);
 

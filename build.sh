@@ -1,6 +1,7 @@
 #!/bin/bash
 set -eo pipefail
 
+CONFIG_DIR="/etc/cbuild"
 CMP="gcc"
 WARN="-Wall -Wextra -Wno-discarded-qualifiers -Wno-unused-parameter"
 ARGS="-O2 -flto -fdata-sections -ffunction-sections -Wl,--gc-sections"
@@ -10,7 +11,7 @@ OS="$(./detect_os.sh)"
 ARCH="$(./detect_arch.sh)"
 LINK="-Lkerep/bin -lkerep-$OS-$ARCH"
 
-if [[ OS -eq "windows" ]]; then
+if [ "$OS" = "windows" ]; then
     OUT_FILE="cbuild.exe"
 else
     OUT_FILE="cbuild"
@@ -18,7 +19,7 @@ fi
 
 command="$CMP $ARGS
     $WARN
-    -DOS=\"$OS\" -DARCH=\"$ARCH\"
+    -DOS=\"$OS\" -DARCH=\"$ARCH\" -DCONFIG_DIR=\"$CONFIG_DIR\"
 $SRC
     $LINK
     -o bin/$OUT_FILE"

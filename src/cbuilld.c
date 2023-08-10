@@ -4,16 +4,21 @@
 #include "CompilationScenario.h"
 
 #ifndef OS
+#error undefined OS
 #define OS "UNDEFINED"
 #endif
 #ifndef ARCH
+#error undefined ARCH
 #define ARCH "UNDEFINED"
 #endif
-
+#ifndef CONFIG_DIR
+#error undefined CONFIG_DIR
+#define CONFIG_DIR "UNDEFINED"
+#endif
 const char* os=OS;
 const char* arch=ARCH;
+const char* global_config_dir=CONFIG_DIR;
 
-const char* global_out_dir="bin";
 const char* configuration="release";
 const char* project_dir_or_file="./";
 Autoarr(Pointer)* tasks;
@@ -39,9 +44,11 @@ int main(const int argc, const char** argv){
     tasks = Autoarr_create(Pointer, 16, 32);
 
     if(cptr_equals(os, "UNDEFINED"))
-        throw("Operation system undefined. Recompile cbuild with flag -DOS=\\\"$(./detect_os.sh)\\\"");
+        throw("Undefined operation system. Recompile cbuild with flag -DOS=\\\"$(./detect_os.sh)\\\"");
     if(cptr_equals(arch, "UNDEFINED"))
-        throw("CPU architecture undefined. Recompile cbuild with flag -DARCH=\\\"$(./detect_arch.sh)\\\"");
+        throw("Undefined CPU architecture. Recompile cbuild with flag -DARCH=\\\"$(./detect_arch.sh)\\\"");
+    if(cptr_equals(global_config_dir, "UNDEFINED"))
+        throw("Undefined global config directory. Recompile cbuild with flag -DCONFIG_DIR=\\\"/etc/cbuild\\\"");
 
     for(int argi = 1; argi < argc; argi++){
         const char* arg = argv[argi];
@@ -50,13 +57,10 @@ int main(const int argc, const char** argv){
             kprintf("Usage: cbuild [options] [tasks0 task1...]\n"
                "  Options:\n"
                "    -h, --help, /?          Display this message.\n"
-               "    -o, --out-dir           Set global output directory (default=bin).\n"
                "    -c, --configuration     Select project configuration (default=release).\n"
                "    -p, --project           Set project directory/file (default=./).\n");
                return 0;
         }
-        else if(argIs("-o") || argIs("--out-dir"))
-            global_out_dir = argNext();
         else if(argIs("-c") || argIs("--configuration"))
             configuration = argNext();
         else if(argIs("-p") || argIs("--project"))

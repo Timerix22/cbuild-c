@@ -63,3 +63,7 @@ Maybe process_start(const char* file_path, const char** args, bool use_PATH){
     p->io.error=error_pipe[0];
     return SUCCESS(UniHeapPtr(Process, p));
 }
+
+Maybe process_waitForExit(Process* p){
+    safethrow(ERR_NOTIMPLEMENTED, ;);
+}

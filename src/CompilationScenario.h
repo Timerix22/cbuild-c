@@ -7,7 +7,6 @@ STRUCT(Language,
     Autoarr(Pointer)* aliases;
     Autoarr(Pointer)* file_extensions;
 )
-Autoarr_declare(Language)
 
 STRUCT(Tool,
     Autoarr(Pointer)* aliases;
@@ -23,7 +22,7 @@ STRUCT(Tool,
 STRUCT(CompilationScenario,
     Hashtable* tools; /* Hashtable<Tool> */
     Hashtable* languages; /* Hashtable<Languages> */
-    Autoarr(Pointer)* tool_order;
+    Autoarr(Pointer)* tool_order; /* Autoarr(char[]) */
 )
 
 /*         Public Functions         */
@@ -42,6 +41,14 @@ Maybe CompilationScenario_exec(CompilationScenario* sc);
 
 
 /*        Internal Functions        */
+
+/// tries to register proramming languages from dtsod field "languages"
+///@return Maybe<bool>
+Maybe CompilationScenario_tryRegisterLanguages(CompilationScenario* sc, Hashtable* dtsod);
+
+/// tries to register tools from dtsod field "tools"
+///@return Maybe<bool>
+Maybe CompilationScenario_tryRegisterTools(CompilationScenario* sc, Hashtable* dtsod);
 
 /// tries to set options for tools registered in the project
 ///@return Maybe<bool>

@@ -15,5 +15,8 @@ typedef struct {
 } Process;
 kt_declare(Process);
 
-///@return Maybe<Process>
+///@return Maybe<Process*>
 Maybe process_start(const char* file_path, const char** args, bool use_PATH);
+
+///@return Maybe<void>
+Maybe process_waitForExit(Process* p);

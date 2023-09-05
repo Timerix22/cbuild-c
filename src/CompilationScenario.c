@@ -1,8 +1,9 @@
 #include <unistd.h>
 #include "CompilationScenario.h"
+#include "../kerep/src/Filesystem/filesystem.h"
+#include "Process.h"
 
 kt_define(Language, NULL, NULL);
-Autoarr_define(Language, false);
 kt_define(Tool, NULL, NULL);
 kt_define(CompilationScenario, (freeMembers_t)CompilationScenario_destruct, NULL);
 
@@ -16,16 +17,15 @@ void CompilationScenario_destruct(CompilationScenario* ptr){
     // TODO
 }
 
-void Tool_construct(Tool* ptr, Autoarr(Pointer)* aliases, const char* exe_file, bool parallel, Autoarr(Language)* supported_languages){
+void Tool_construct(Tool* ptr, Autoarr(Pointer)* aliases, const char* exe_file, bool parallel, Autoarr(Pointer)* supported_languages){
     ptr->aliases = aliases;
     ptr->exe_file = exe_file;
     ptr->parallel = parallel;
     ptr->supported_languages = Hashtable_create();
-    Autoarr_foreach(supported_languages, l,
-        Language* l_copy = malloc(sizeof(Language));
-        *l_copy = l;
-        Autoarr_foreach(l.aliases, l_name, 
-            Hashtable_add(ptr->supported_languages, l_name, UniHeapPtr(Language, l_copy)));
+    Autoarr_foreach(supported_languages, _l,
+        Language* l = _l;
+        Autoarr_foreach(l->aliases, l_name, 
+            Hashtable_add(ptr->supported_languages, l_name, UniHeapPtr(Language, l)));
     )
     ptr->src_languages = Hashtable_create();
     ptr->src_dirs = Autoarr_create(Pointer, 32, 32);
@@ -37,20 +37,29 @@ void Tool_destruct(Tool* ptr){
     // TODO
 }
 
+void Language_construct(Language* ptr, Autoarr(Pointer)* aliases, Autoarr(Pointer)* file_extensions){
+    ptr->aliases = aliases;
+    ptr->file_extensions = file_extensions;
+}
+
+void Language_destruct(Language* ptr){
+    // TODO
+}
+
 #define Dtsod_getStrField(FIELD, OBJ) \
     if(Hashtable_tryGet(dtsod, #FIELD, &val)){ \
-        if(val.typeId != ktid_char_Ptr) \
+        if(!UniCheckTypePtr(val, char)) \
             safethrow(#FIELD " value expected to be string",;);\
         OBJ->FIELD = val.VoidPtr; \
     }
 
 #define Dtsod_addToStrAr(FIELD, OBJ) \
     if(Hashtable_tryGet(dtsod, #FIELD, &val)){ \
-        if(val.typeId != ktid_Autoarr_Unitype_Ptr) \
+        if(!UniCheckTypePtr(val, Autoarr(Unitype))) \
             safethrow(#FIELD " value expected to be a string array", ;); \
         Autoarr(Unitype)* ar = val.VoidPtr; \
         Autoarr_foreach(ar, el, \
-            if(el.typeId != ktid_char_Ptr) \
+            if(!UniCheckTypePtr(el, char)) \
                 safethrow(#FIELD " array values expected to be string", ;); \
             Autoarr_add(OBJ->FIELD, el.VoidPtr); \
         ) \
@@ -61,12 +70,12 @@ Maybe Tool_tryApplyOptions(Tool* t, Hashtable* dtsod){
     Dtsod_addToStrAr(src_dirs, t);
     Dtsod_addToStrAr(pre_args, t);
     Dtsod_addToStrAr(post_args, t);
-    if(Hashtable_tryGet(dtsod, "src_languages", &val)){ \
-        if(val.typeId != ktid_Autoarr_Unitype_Ptr) \
-            safethrow("src_languages value expected to be a string array", ;); \
+    if(Hashtable_tryGet(dtsod, "src_languages", &val)){
+        if(!UniCheckTypePtr(val, Autoarr(Unitype)))
+            safethrow("src_languages value expected to be a string array", ;);
         Autoarr(Unitype)* ar = val.VoidPtr;
         Autoarr_foreach(ar, el,
-            if(el.typeId != ktid_char_Ptr)
+            if(!UniCheckTypePtr(el, char))
                 safethrow("src_languages array values expected to be string", ;);
             const char* l_name = el.VoidPtr;
             if(!Hashtable_tryGet(t->supported_languages, l_name, &val))
@@ -80,11 +89,15 @@ Maybe Tool_tryApplyOptions(Tool* t, Hashtable* dtsod){
 Maybe CompilationScenario_tryApplyToolsOptions(CompilationScenario* sc, Hashtable* dtsod){
     Unitype val = UniNull;
 
+    // adds tools to tool_order
+    Dtsod_addToStrAr(tool_order, sc);
+
+    // sets options for each tool
     try(CompilationScenario_tryApplyPlatformSpecificOptions(sc, dtsod), _m0, ;);
     Hashtable_foreach(sc->tools, _tool,
         Tool* tool = _tool.value.VoidPtr;
         if(Hashtable_tryGet(dtsod, _tool.key, &val)){
-            if(val.typeId != ktid_ptrName(Hashtable))
+            if(!UniCheckTypePtr(val, Hashtable))
                 safethrow(ERR_WRONGTYPE, ;);
             Hashtable* tool_dtsod = val.VoidPtr;
             try(Tool_tryApplyOptions(tool, tool_dtsod), _m1, ;);
@@ -97,7 +110,7 @@ Maybe CompilationScenario_tryApplyToolsOptions(CompilationScenario* sc, Hashtabl
 Maybe CompilationScenario_tryApplyConditionalOptions(CompilationScenario* sc, Hashtable* dtsod, const char* condition_name){
     Unitype val = UniNull;
     if(Hashtable_tryGet(dtsod, condition_name, &val)){
-        if(val.typeId != ktid_Hashtable_Ptr)
+        if(!UniCheckTypePtr(val, Hashtable))
             safethrow(cptr_concat(condition_name, " expected to be key-value map"), ;);
         Hashtable* conditional_options = val.VoidPtr;
         try(CompilationScenario_tryApplyToolsOptions(sc, conditional_options), _m0, ;);
@@ -137,11 +150,134 @@ Maybe CompilationScenario_applyTaskOptions(CompilationScenario* sc, Hashtable* d
     return MaybeNull;
 }
 
+Maybe CompilationScenario_tryRegisterLanguages(CompilationScenario* sc, Hashtable* dtsod){
+    Unitype val = UniNull;
+    if(!Hashtable_tryGet(dtsod, "languages", &val))
+        return SUCCESS(UniFalse);
+
+    if(!UniCheckTypePtr(val, Hashtable))
+        safethrow(ERR_WRONGTYPE, ;);
+    Autoarr(Unitype)* languages_serializad = val.VoidPtr;
+    
+    Autoarr_foreach(languages_serializad, ldtsod,
+        if(!UniCheckTypePtr(ldtsod, Hashtable))
+            safethrow(ERR_WRONGTYPE, ;);
+        
+        // reads aliases: string[] from dtsod
+        if(!Hashtable_tryGet(ldtsod.VoidPtr, "aliases", &val))
+            safethrow(ERR_FORMAT, ;);
+        if(!UniCheckTypePtr(val, Autoarr(Unitype)))
+            safethrow(ERR_WRONGTYPE, ;);
+        Autoarr(Unitype)* aliases_uni = val.VoidPtr;
+        Autoarr(Pointer)* aliases = Autoarr_create(Pointer, 32, 32);
+        Autoarr_foreach(aliases_uni, au, 
+            if(!UniCheckTypePtr(au, char))
+                safethrow(ERR_WRONGTYPE, ;);
+            Autoarr_add(aliases, au.VoidPtr);
+        )
+
+        // reads file_extensions: string[] from dtsod
+        if(!Hashtable_tryGet(ldtsod.VoidPtr, "file_extensions", &val))
+            safethrow(ERR_FORMAT, ;);
+        if(!UniCheckTypePtr(val, Autoarr(Unitype)))
+            safethrow(ERR_WRONGTYPE, ;);
+        Autoarr(Unitype)* file_extensions_uni = val.VoidPtr;
+        Autoarr(Pointer)* file_extensions = Autoarr_create(Pointer, 32, 32);
+        Autoarr_foreach(file_extensions_uni, feu, 
+            if(!UniCheckTypePtr(feu, char))
+                safethrow(ERR_WRONGTYPE, ;);
+            Autoarr_add(file_extensions, feu.VoidPtr);
+        )
+
+        Language* lang = malloc(sizeof(Language));
+        Language_construct(lang, aliases, file_extensions);
+        // registers each alias of the language
+        Autoarr_foreach(aliases, l_name,
+            if(!Hashtable_tryAdd(sc->languages, l_name, UniHeapPtr(Language, lang)))
+                safethrow(cptr_concat("language '", l_name, "has been already registered"), ;);
+        )
+    )
+
+    return SUCCESS(UniTrue);
+}
+
+Maybe CompilationScenario_tryRegisterTools(CompilationScenario* sc, Hashtable* dtsod){
+    Unitype val = UniNull;
+    if(!Hashtable_tryGet(dtsod, "tools", &val))
+        return SUCCESS(UniFalse);
+
+    if(!UniCheckTypePtr(val, Hashtable))
+        safethrow(ERR_WRONGTYPE, ;);
+    Autoarr(Unitype)* tools_serializad = val.VoidPtr;
+    
+    Autoarr_foreach(tools_serializad, tdtsod,
+        if(!UniCheckTypePtr(tdtsod, Hashtable))
+            safethrow(ERR_WRONGTYPE, ;);
+
+        // reads exe_file: string from dtsod
+        if(!Hashtable_tryGet(tdtsod.VoidPtr, "exe_file", &val))
+            safethrow(ERR_FORMAT, ;);
+        if(!UniCheckTypePtr(val, char))
+            safethrow(ERR_WRONGTYPE, ;);
+        char* exe_file = val.VoidPtr;
+
+        // reads parallel: bool from dtsod
+        if(!Hashtable_tryGet(tdtsod.VoidPtr, "parallel", &val))
+            safethrow(ERR_FORMAT, ;);
+        if(!UniCheckType(val, bool))
+            safethrow(ERR_WRONGTYPE, ;);
+        bool parallel = val.Bool;
+
+        // reads aliases: string[] from dtsod
+        if(!Hashtable_tryGet(tdtsod.VoidPtr, "aliases", &val))
+            safethrow(ERR_FORMAT, ;);
+        if(!UniCheckTypePtr(val, Autoarr(Unitype)))
+            safethrow(ERR_WRONGTYPE, ;);
+        Autoarr(Unitype)* aliases_uni = val.VoidPtr;
+        Autoarr(Pointer)* aliases = Autoarr_create(Pointer, 32, 32);
+        Autoarr_foreach(aliases_uni, au, 
+            if(!UniCheckTypePtr(au, char))
+                safethrow(ERR_WRONGTYPE, ;);
+            Autoarr_add(aliases, au.VoidPtr);
+        )
+
+        // reads supported_languages: string[] dtsod
+        if(!Hashtable_tryGet(tdtsod.VoidPtr, "supported_languages", &val))
+            safethrow(ERR_FORMAT, ;);
+        if(!UniCheckTypePtr(val, Autoarr(Unitype)))
+            safethrow(ERR_WRONGTYPE, ;);
+        Autoarr(Unitype)* supported_languages_uni = val.VoidPtr;
+        Autoarr(Pointer)* supported_languages = Autoarr_create(Pointer, 32, 32);
+        Autoarr_foreach(supported_languages_uni, lu, 
+            if(!UniCheckTypePtr(lu, char))
+                safethrow(ERR_WRONGTYPE, ;);
+            char* l_name = lu.VoidPtr;
+            // gets language pointer from CompilationScenario regisgered languages
+            if(!Hashtable_tryGet(sc->languages, l_name, &val))
+                safethrow(ERR_KEYNOTFOUND, ;);
+            if(!UniCheckTypePtr(val, Language))
+                safethrow(ERR_WRONGTYPE, ;);
+            Language* lang = val.VoidPtr;
+            Autoarr_add(supported_languages, lang);
+        )
+
+        Tool* tool = malloc(sizeof(Tool));
+        Tool_construct(tool, aliases, exe_file, parallel, supported_languages);
+        // registers each alias of the tool
+        Autoarr_foreach(aliases, t_name,
+            if(!Hashtable_tryAdd(sc->tools, t_name, UniHeapPtr(Tool, tool)))
+                safethrow(cptr_concat("tool '", t_name, "has been already registered"), ;);
+        )
+    )
+
+    return SUCCESS(UniTrue);
+}
+
 Maybe CompilationScenario_applyProjectOptions(CompilationScenario* sc, Hashtable* dtsod, const char* configuration, const char* task){
     // TODO version check
     // TODO import
-    // TODO register tools
-    // TODO register languagess
+    try(CompilationScenario_tryRegisterLanguages(sc, dtsod), _m05, ;);
+    try(CompilationScenario_tryRegisterTools(sc, dtsod), _m06, ;);
     // project-wide options
     try(CompilationScenario_tryApplyToolsOptions(sc, dtsod), _m0, ;);
     // configuration options
@@ -151,14 +287,54 @@ Maybe CompilationScenario_applyProjectOptions(CompilationScenario* sc, Hashtable
     return MaybeNull;
 }
 
-Maybe CompilationScenario_exec(CompilationScenario* sc){
-    /*const char ** compiler_args;
-    Autoarr_foreach(sc->sources, arg,
-        int rzlt = -1;
-        if(rzlt != 0){
-            kprintf("\nprocess exited with code %i\n", rzlt);
-            return false;
+Maybe Tool_exec(Tool* tool){
+    Autoarr(Pointer)* args_ar = Autoarr_create(Pointer, 32, 32);
+    Autoarr_foreach(tool->pre_args, arg, 
+        Autoarr_add(args_ar, arg));
+
+    Autoarr(Pointer)* sources = Autoarr_create(Pointer, 32, 32);
+    Autoarr_foreach(tool->src_dirs, dir,
+        try(dir_getFiles(dir, true), _m2, ;);
+        char** files = _m2.value.VoidPtr;
+        while(*files){
+            Autoarr_add(sources, *files);
+            files++;
         }
-    );*/
+    );
+
+    if(tool->parallel){
+        safethrow(ERR_NOTIMPLEMENTED, ;);
+    }
+    else {
+        Autoarr_foreach(sources, file, 
+            Autoarr_add(args_ar, file));
+    }
+
+    Autoarr_foreach(tool->post_args, arg, 
+        Autoarr_add(args_ar, arg));
+
+    const char** args = (const char**)Autoarr_toArray(args_ar);
+    Autoarr_freeWithoutMembers(args_ar, true);
+
+    Process* tool_proc = NULL;
+    try(process_start(tool->exe_file, args, true), _mtp,
+        tool_proc = _mtp.value.VoidPtr);
+
+    // TODO wrap tool_proc->io    
+    process_waitForExit(tool_proc);
+
+    return MaybeNull;
+}
+
+Maybe CompilationScenario_exec(CompilationScenario* sc){
+    Autoarr_foreach(sc->tool_order, tool_name,
+        Unitype uni;
+        if(!Hashtable_tryGet(sc->tools, tool_name, &uni))
+            safethrow(ERR_KEYNOTFOUND, ;);
+        if(!UniCheckTypePtr(uni, Tool))
+            safethrow(ERR_WRONGTYPE, ;);
+        Tool* tool = uni.VoidPtr;
+        try(Tool_exec(tool), _m1, ;);    
+    )
     return MaybeNull;
 }

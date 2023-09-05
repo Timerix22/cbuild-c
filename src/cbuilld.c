@@ -39,6 +39,9 @@ char* projectFileFromDir(const char* dir){
 int main(const int argc, const char** argv){
     kt_beginInit();
     kt_initKerepTypes();
+    kt_register(CompilationScenario);
+    kt_register(Language);
+    kt_register(Tool);
     kt_endInit();
 
     tasks = Autoarr_create(Pointer, 16, 32);

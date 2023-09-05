@@ -23,7 +23,6 @@
                 + run tool on src
         + else
             + run tool on src_to_process
-+ copy files to general_out_dir
 
 ## Example of project.dtsod:
 ```yml

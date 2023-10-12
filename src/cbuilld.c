@@ -91,7 +91,10 @@ int main(const int argc, const char** argv){
     tryLast(DtsodV24_deserialize(proj_file_text), _m3, free(proj_file_text));
     Hashtable* proj_dtsod = _m3.value.VoidPtr;
 
+    char* platform = cptr_concat(os, "-", arch);
     Autoarr_foreach(tasks, task,
+        kprintf("executing task '%s', configuration '%s', platform '%s'\n",
+            task, configuration, platform);
         CompilationScenario proj_sc;
         CompilationScenario_construct(&proj_sc);
         tryLast(CompilationScenario_applyProjectOptions(&proj_sc, proj_dtsod, configuration, task), _m4, )        

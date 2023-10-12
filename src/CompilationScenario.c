@@ -328,6 +328,7 @@ Maybe Tool_exec(Tool* tool){
 
 Maybe CompilationScenario_exec(CompilationScenario* sc){
     Autoarr_foreach(sc->tool_order, tool_name,
+        kprintf("tool: '%s'\n", tool_name);
         Unitype uni;
         if(!Hashtable_tryGet(sc->tools, tool_name, &uni))
             safethrow(ERR_KEYNOTFOUND, ;);

@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include "CompilationScenario.h"
 #include "../kerep/src/Filesystem/filesystem.h"
-#include "Process.h"
+#include "process/process.h"
 
 kt_define(Language, NULL, NULL);
 kt_define(Tool, NULL, NULL);
@@ -314,15 +314,16 @@ Maybe Tool_exec(Tool* tool){
         Autoarr_add(args_ar, arg));
 
     const char** args = (const char**)Autoarr_toArray(args_ar);
+    i32 argc = Autoarr_length(args_ar);
     Autoarr_freeWithoutMembers(args_ar, true);
 
-    Process* tool_proc = NULL;
-    try(process_start(tool->exe_file, args, true), _mtp,
-        tool_proc = _mtp.value.VoidPtr);
+    Process tool_proc;
+    try(process_start(&tool_proc, tool->exe_file, args, argc, true), _m5512, Autoarr_freeWithoutMembers(sources, true))
 
     // TODO wrap tool_proc->io    
-    process_waitForExit(tool_proc);
+    process_waitForExit(&tool_proc);
 
+    Autoarr_freeWithoutMembers(sources, true);
     return MaybeNull;
 }
 

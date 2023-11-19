@@ -2,6 +2,7 @@
 #include "../kerep/src/Filesystem/filesystem.h"
 #include "../kerep/src/DtsodParser/DtsodV24.h"
 #include "CompilationScenario.h"
+#include "process/process.h"
 
 #ifndef OS
 #error undefined OS
@@ -42,6 +43,7 @@ int main(const int argc, const char** argv){
     kt_register(CompilationScenario);
     kt_register(Language);
     kt_register(Tool);
+    kt_register(Process);
     kt_endInit();
 
     tasks = Autoarr_create(Pointer, 16, 32);

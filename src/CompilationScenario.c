@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include "CompilationScenario.h"
 #include "../kerep/src/Filesystem/filesystem.h"
-#include "process/process.h"
+#include "process/Process.h"
 
 kt_define(Language, NULL, NULL);
 kt_define(Tool, NULL, NULL);

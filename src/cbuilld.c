@@ -2,7 +2,7 @@
 #include "../kerep/src/Filesystem/filesystem.h"
 #include "../kerep/src/DtsodParser/DtsodV24.h"
 #include "CompilationScenario.h"
-#include "process/process.h"
+#include "process/Process.h"
 
 #ifndef OS
 #error undefined OS

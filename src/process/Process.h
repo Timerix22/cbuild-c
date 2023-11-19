@@ -22,10 +22,10 @@ kt_declare(Process);
 
 ///@param search_in_PATH if true and file_path doesn't contain path separator characters, will search in PATH for the file_path
 ///@return Maybe<void>
-Maybe process_start(Process* ptr, const char* file_path, const char** args, int argc, bool search_in_PATH);
+Maybe Process_start(Process* ptr, const char* file_path, const char** args, int argc, bool search_in_PATH);
 
 ///@return Maybe<void>
-Maybe process_waitForExit(Process* p);
+Maybe Process_waitForExit(Process* p);
 
 ///@return Maybe<void>
 Maybe Process_stop(Process* p);

@@ -318,10 +318,10 @@ Maybe Tool_exec(Tool* tool){
     Autoarr_freeWithoutMembers(args_ar, true);
 
     Process tool_proc;
-    try(process_start(&tool_proc, tool->exe_file, args, argc, true), _m5512, Autoarr_freeWithoutMembers(sources, true))
+    try(Process_start(&tool_proc, tool->exe_file, args, argc, true), _m5512, Autoarr_freeWithoutMembers(sources, true))
 
     // TODO wrap tool_proc->io    
-    process_waitForExit(&tool_proc);
+    Process_waitForExit(&tool_proc);
 
     Autoarr_freeWithoutMembers(sources, true);
     return MaybeNull;

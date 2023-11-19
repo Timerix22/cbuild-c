@@ -6,7 +6,7 @@
 
 #define safethrow_if_false(expr) if(!expr) safethrow(cptr_concat(#expr " exited with error ", toString_i64(GetLastError())), ;);
 
-Maybe process_start(Process* p, const char* file_path, const char** args, int argc, bool search_in_PATH){
+Maybe Process_start(Process* p, const char* file_path, const char** args, int argc, bool search_in_PATH){
     memset(p, 0, sizeof(Process));
     if(search_in_PATH && !cptr_contains(file_path, "\\")){
         LPSTR lpFilePart;
@@ -112,7 +112,7 @@ Maybe Process_closeHandles(Process* p){
     return MaybeNull;
 }
 
-Maybe process_waitForExit(Process* p){
+Maybe Process_waitForExit(Process* p){
     if(WaitForSingleObject(p->_winProcHandle, INFINITE) != 0)
         safethrow("WaitForSingleObject() failed", ;);
     DWORD exitCode = 0;

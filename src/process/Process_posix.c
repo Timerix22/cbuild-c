@@ -12,7 +12,7 @@ extern void * memset(void * __dst, int __val, size_t __n);
 #define throw_if_negative(expr) if(expr < 0) throw(cptr_concat(#expr " exited with error ", toString_i64(errno)));
 #define safethrow_if_negative(expr) if(expr < 0) safethrow(cptr_concat(#expr " exited with error ", toString_i64(errno)), ;);
 
-Maybe process_start(Process* p, const char* file_path, const char** args, int argc, bool search_in_PATH){
+Maybe Process_start(Process* p, const char* file_path, const char** args, int argc, bool search_in_PATH){
     memset(p, 0, sizeof(Process));
     int input_pipe[2];
     int output_pipe[2];
@@ -71,7 +71,7 @@ Maybe Process_closeHandles(Process* p){
     return MaybeNull;
 }
 
-Maybe process_waitForExit(Process* p){
+Maybe Process_waitForExit(Process* p){
     int wstatus=0;    
     if(waitpid(p->id, &wstatus, 0) == -1)
         safethrow("waitpid() error", ;);

@@ -4,7 +4,15 @@ set -eo pipefail
 CONFIG_DIR="/etc/cbuild"
 CMP="gcc"
 WARN="-Wall -Wextra -Wno-discarded-qualifiers -Wno-unused-parameter"
-ARGS="-O2 -flto -fdata-sections -ffunction-sections -Wl,--gc-sections"
+
+ARGS_DEBUG="-O0 -g"
+ARGS_RELEASE="-O2 -flto=auto -fdata-sections -ffunction-sections -Wl,--gc-sections"
+if [ "$1" -eq "debug" ]; then
+    ARGS=$ARGS_DEBUG
+else 
+    ARGS=$ARGS_RELEASE
+fi
+
 SRC="$(find src -name '*.c')"
 
 OS="$(./detect_os.sh)"
@@ -32,7 +40,7 @@ if [ ! -f "kerep/bin/libkerep-$OS-$ARCH.a" ]; then
 fi
 
 rm -rf bin
-mkdir bin
+mkdir -p bin
 echo "----------------[cbuild]----------------"
 echo "$command"
 

@@ -3,7 +3,7 @@ set -eo pipefail
 
 CMP="gcc"
 WARN="-std=c11 -Wall -Wno-discarded-qualifiers -Wno-unused-parameter"
-ARGS="-O2 -flto -fpic -fdata-sections -ffunction-sections"
+ARGS="-O2 -flto=auto -fpic -fdata-sections -ffunction-sections"
 SRC="$(find src -name '*.c')"
 
 OS=$(../detect_os.sh)
